@@ -46,6 +46,9 @@ class PokerHandParser
   end
 
   def parseBlackWhiteLine(line)
+    hands=line.scan(/(Black|White):\W(\w\w\W\w\w\W\w\w\W\w\w\W\w\w)/)
+    {:black=>hands.select{|x|x[0]=="Black"}.map{|h|parseHand(h[1])}.first, 
+     :white=>hands.select{|x|x[0]=="White"}.map{|h|parseHand(h[1])}.first}
   end
 end
 
@@ -105,11 +108,29 @@ describe PokerHandParser do
     @sut.parseCard("KC").value.must_equal 13 
   end
 
+  it "parses a partial hand" do
+    @sut.parseHand("JS 5D").must_equal [Card.new(JACK,SPADES),Card.new(FIVE,DIAMONDS)]
+  end
+
+  it "parses black and white into two hands" do
+    @sut.parseBlackWhiteLine("Black: 2H 3D 5S 9C KD  White: 2C 3H 4S 8C KH").count.must_equal 2
+  end
+  it "parsed hands contain five cards" do
+    @sut.parseBlackWhiteLine("Black: 2H 3D 5S 9C KD  White: 2C 3H 4S 8C KH")[:black].count.must_equal 5
+    @sut.parseBlackWhiteLine("Black: 2H 3D 5S 9C KD  White: 2C 3H 4S 8C KH")[:white].count.must_equal 5
+  end
+  it "parsed hands are correct" do
+    @sut.parseBlackWhiteLine("Black: 2H 3D 5S 9C KD  White: 2C 3H 4S 8C KH")[:black].must_equal [Card.new(TWO,HEARTS),Card.new(THREE,DIAMONDS),Card.new(FIVE,SPADES),Card.new(NINE,CLUBS),Card.new(KING,DIAMONDS)]
+    @sut.parseBlackWhiteLine("Black: 2H 3D 5S 9C KD  White: 2C 3H 4S 8C KH")[:white].must_equal [Card.new(TWO,CLUBS),Card.new(THREE,HEARTS),Card.new(FOUR,SPADES),Card.new(EIGHT,CLUBS),Card.new(KING,HEARTS)]
+  end
 
 
- # it "parses a partial hand" do
- #   @sut.parseHand("JS 5D").must_equal [Card.new(JACK,SPADES),Card.new(FIVE,DIAMONDS)]
- # end
+
+
+
+
+
+
 
 end
 
