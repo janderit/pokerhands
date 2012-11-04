@@ -1,8 +1,15 @@
 require 'minitest/autorun'
 
+TIE=0
+BLACK=1
+WHITE=2
+
 
 
 class PokerHandComparer
+  def analyse(line)
+    TIE
+  end
 end
 
 
