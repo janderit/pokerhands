@@ -60,7 +60,6 @@ class PokerHand
 end
 
 class HighCard < PokerHand
-  attr_reader :card,:value
   def initialize(hand)
     @card=hand.max{|a,b| a.value<=>b.value}
     @majorvalue=@card.value()
@@ -73,12 +72,35 @@ class HighCard < PokerHand
   end
 end
 
+class Pair < PokerHand
+  def initialize(hand)
+    pairs=hand.select{|x|hand.select{|y|y.rank==x.rank}.count==2}
+    pairs=pairs.uniq{|c|c.rank}
+
+    if pairs.count==0
+        @precedence=0
+        @kickers=nil
+        @majorvalue=0
+        @minorvalue=0
+    else
+        @card=pairs.max{|a,b|a.value<=>b.value}
+        @majorvalue=@card.value()
+        @minorvalue=@card.value()
+        @precedence=2
+        @kickers=hand.select{|c|c.rank!=@card.rank}
+    end
+  end
+  def to_s()
+    "One pair #{@card.rank}"
+  end
+end
+
+
+
 class PokerHandEvaluator
   def evaluateHand(hand)
-    result=[]
-    cand=HighCard.new(hand)
-    result+=[cand] if (cand.precedence>0)
-    return result
+    result=[HighCard.new(hand),Pair.new(hand)]
+    return result.max{|a,b|a.precedence<=>b.precedence}
   end
 end
 
@@ -121,12 +143,9 @@ class PokerHandComparer
   end
 
   def compare(black, white)
-    maxblack=black.max{|a,b|a.precedence<=>b.precedence}
-    maxwhite=white.max{|a,b|a.precedence<=>b.precedence}
-
-    return compareEqual(maxblack,maxwhite) if (maxblack.precedence==maxwhite.precedence)
-    return WinningHand.new(BLACK,maxblack) if (maxblack.precedence>maxwhite.precedence)
-    return WinningHand.new(WHITE,maxwhite) if (maxblack.precedence<maxwhite.precedence)
+    return compareEqual(black,white) if (black.precedence==white.precedence)
+    return WinningHand.new(BLACK,black) if (black.precedence>white.precedence)
+    return WinningHand.new(WHITE,white) if (black.precedence<white.precedence)
     raise("WTF")
   end
   
@@ -189,25 +208,36 @@ describe PokerHandEvaluator do
   end
 
   it "identifies the high card" do
-    hands = @sut.evaluateHand(@parser.parseHand("TC 6H AD QS 2S"))
-    hands.count.must_equal 1
-    hand=hands.first
+    hand = @sut.evaluateHand(@parser.parseHand("TC 6H AD QS 2S"))
     hand.must_be_instance_of HighCard
-    hand.card.must_equal Card.new(ACE,DIAMONDS)
-    hand.card.value.must_equal 14
     hand.majorvalue.must_equal 14
     hand.minorvalue.must_equal 14
     hand.precedence.must_equal 1
   end
 
   it "identifies the high card's kickers" do
-    hands = @sut.evaluateHand(@parser.parseHand("TC 6H AD QS 2S"))
-    hands.count.must_equal 1
-    hand=hands.first
+    hand = @sut.evaluateHand(@parser.parseHand("TC 6H AD QS 2S"))
     hand.must_be_instance_of HighCard
     hand.kickers.count.must_equal 4
-    @sut.evaluateHand(hand.kickers).first.card.must_equal Card.new(QUEEN,SPADES)
+    hand.kickers.max{|a,b|a.value<=>b.value}.must_equal Card.new(QUEEN,SPADES)
   end
+
+  it "identifies a pair" do
+    hand = @sut.evaluateHand(@parser.parseHand("TC 6H 6D QS 2S"))
+    hand.must_be_instance_of Pair
+    hand.majorvalue.must_equal 6
+    hand.minorvalue.must_equal 6
+    hand.precedence.must_equal 2
+  end
+
+  it "identifies the pair's kickers" do
+    hand = @sut.evaluateHand(@parser.parseHand("TC 6H 6D QS 2S"))
+    hand.must_be_instance_of Pair
+    hand.kickers.count.must_equal 3
+    hand.kickers.max{|a,b|a.value<=>b.value}.must_equal Card.new(QUEEN,SPADES)
+  end
+
+
 
 
 
@@ -234,5 +264,7 @@ describe PokerHandComparer do
   sample("Black: 2H 4S 4C 2D 4H  White: 2S 8S AS QS 3S", BLACK)
   sample("Black: 2H 3D 5S 9C KD  White: 2C 3H 4S 8C KH", BLACK)
   sample("Black: 2H 3D 5S 9C KD  White: 2D 3H 5C 9S KH", TIE)
+
+  sample("Black: 2H 3D 5S 5C KD  White: 2D 4H 5H 5D KH", WHITE)
 
 end
