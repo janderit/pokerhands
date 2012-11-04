@@ -37,8 +37,12 @@ ACE="A"
 
 class PokerHandParser
 
+  def parseCard(card)
+    Card.new(card[0],card[1])
+  end
+
   def parseHand(hand)
-    cards=hand.scan(/[2-9TJQKA][CSHD]/)
+    hand.scan(/[2-9TJQKA][CSHD]/).map{|card|parseCard(card)}
   end
 
   def parseBlackWhiteLine(line)
@@ -91,9 +95,21 @@ describe PokerHandParser do
     @sut = PokerHandParser.new
   end
 
-  #it "parses a partial hand" do
-  #  @sut.parseHand("JS 5D").must_equal [Card.new(JACK,SPADES),Card.new(FIVE,DIAMONDS)]
-  #end
+  it "parses a normal card" do
+    @sut.parseCard("5D").must_equal Card.new(FIVE,DIAMONDS)
+    @sut.parseCard("5D").value.must_equal 5
+  end
+
+  it "parses a high card" do
+    @sut.parseCard("KC").must_equal Card.new(KING,CLUBS)
+    @sut.parseCard("KC").value.must_equal 13 
+  end
+
+
+
+ # it "parses a partial hand" do
+ #   @sut.parseHand("JS 5D").must_equal [Card.new(JACK,SPADES),Card.new(FIVE,DIAMONDS)]
+ # end
 
 end
 
