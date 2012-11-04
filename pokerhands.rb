@@ -114,6 +114,7 @@ class TwoPairs < PokerHand
         @kickers=hand.select{|c|c.rank!=@carda.rank&&c.rank!=@cardb.rank}
     end
   end
+  attr_reader :carda,:cardb
   def to_s()
     "Two pairs #{@carda.rank} and #{@cardb.rank}"
   end
@@ -137,6 +138,7 @@ class Triplet < PokerHand
         @kickers=hand.select{|c|c.rank!=@card.rank}
     end
   end
+  attr_reader :card
   def to_s()
     "Three of a kind #{@card.rank}"
   end
@@ -165,6 +167,27 @@ class Quadriga < PokerHand
   end
 end
 
+class FullHouse<PokerHand
+  def initialize(hand)
+    three=Triplet.new(hand)
+    pairs=TwoPairs.new(hand)
+    kickers=nil
+    if three.precedence>0 && pairs.precedence>0
+        @precedence=7
+        @carda=three.card
+        @cardb=pairs.carda unless (pairs.carda.rank==@carda.rank)
+        @cardb=pairs.cardb if (pairs.carda.rank==@carda.rank)
+        @majorvalue=@carda.value()
+        @minorvalue=@cardb.value()
+    else
+        @precedence=0
+    end
+  end
+  def to_s()
+    "Full house #{@carda.rank} and #{@cardb.rank}"
+  end
+end
+
 
 
 
@@ -175,7 +198,7 @@ end
 
 class PokerHandEvaluator
   def evaluateHand(hand)
-    result=[HighCard.new(hand),Pair.new(hand),TwoPairs.new(hand),Triplet.new(hand),Quadriga.new(hand)]
+    result=[HighCard.new(hand),Pair.new(hand),TwoPairs.new(hand),Triplet.new(hand),Quadriga.new(hand),FullHouse.new(hand)]
     return result.max{|a,b|a.precedence<=>b.precedence}
   end
 end
