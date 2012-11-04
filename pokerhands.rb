@@ -1,16 +1,46 @@
 require 'minitest/autorun'
 
+class PokerHandParser
+  def parseBlackWhiteLine(line)
+  end
+end
+
+class PokerHandEvaluator
+  def evaluateHand(hand)
+  end
+end
+
+
 TIE=0
 BLACK=1
 WHITE=2
 
 
-
 class PokerHandComparer
-  def analyse(line)
+  @parser = PokerHandParser.new
+  @evaluator = PokerHandEvaluator.new
+
+  def compare(black, white)
     TIE
   end
+  
+  def analyse(line)
+    hands=@parser.parseBlackWhiteLine(line)
+    black=@evaluator.evaluateHand(hands[:black])
+    white=@evaluator.evaluateHand(hands[:white])
+    compare(black, white)
+  end
+
 end
+
+
+
+describe PokerHandParser do
+end
+
+describe PokerHandEvaluator do
+end
+
 
 
 
@@ -20,8 +50,6 @@ def sample(line, expectation)
     @sut.analyse(line).must_equal expectation
   end
 end
-
-
 
 describe PokerHandComparer do
   before do
