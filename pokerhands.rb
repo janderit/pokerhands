@@ -210,7 +210,35 @@ class Flush < PokerHand
   end
 end
 
+class Straight < PokerHand
+  def initialize(hand)
 
+    cards=hand.sort_by{|c|-c.value}
+
+    straight=true
+
+    for i in 0..3 do
+        straight=false if cards[i].value!=cards[i+1].value+1
+    end
+
+    @kickers=nil
+    if straight
+        @card=cards.first
+        @majorvalue=@card.value()
+        @minorvalue=@card.value()
+        @precedence=5
+    else
+        @precedence=0
+        @majorvalue=0
+        @minorvalue=0
+    end
+  end
+  attr_reader :card
+  def to_s()
+    "Straight from #{@card}"
+  end
+
+end
 
 
 
@@ -222,7 +250,7 @@ end
 
 class PokerHandEvaluator
   def evaluateHand(hand)
-    result=[HighCard.new(hand),Pair.new(hand),TwoPairs.new(hand),Triplet.new(hand),Quadriga.new(hand),FullHouse.new(hand),Flush.new(hand)]
+    result=[HighCard.new(hand),Pair.new(hand),TwoPairs.new(hand),Triplet.new(hand),Quadriga.new(hand),FullHouse.new(hand),Flush.new(hand),Straight.new(hand)]
     return result.max{|a,b|a.precedence<=>b.precedence}
   end
 end
@@ -375,6 +403,15 @@ describe PokerHandEvaluator do
     hand.kickers.first.must_equal Card.new(TEN,CLUBS)
   end
 
+  it "detects a straight" do
+    hand = @sut.evaluateHand(@parser.parseHand("KC QH JD TS 9S"))
+    hand.must_be_instance_of Straight
+    hand.majorvalue.must_equal 13 
+    hand.minorvalue.must_equal 13
+    hand.precedence.must_equal 5
+ 
+  end
+
 
 
 
@@ -410,5 +447,6 @@ describe PokerHandComparer do
   sample("Black: 2H 3D 5S 5C KD  White: 2D 4H 5H 5D KH", WHITE)
 
   sample("Black: 2H 4S 4C 2D 4H  White: 3S 3C 3H 3D 6S", WHITE)
+  sample("Black: 9H QS TC JD KH  White: 2S 3C 3H 3D 6S", BLACK)
 
 end
