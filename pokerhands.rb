@@ -74,7 +74,7 @@ end
 
 class Pair < PokerHand
   def initialize(hand)
-    pairs=hand.select{|x|hand.select{|y|y.rank==x.rank}.count==2}
+    pairs=hand.select{|x|hand.select{|y|y.rank==x.rank}.count>1}
     pairs=pairs.uniq{|c|c.rank}
 
     if pairs.count==0
@@ -95,11 +95,37 @@ class Pair < PokerHand
   end
 end
 
+class TwoPairs < PokerHand
+  def initialize(hand)
+    pairs=hand.select{|x|hand.select{|y|y.rank==x.rank}.count>1}
+    pairs=pairs.uniq{|c|c.rank}
+
+    if pairs.count<2
+        @precedence=0
+        @kickers=nil
+        @majorvalue=0
+        @minorvalue=0
+    else
+        @carda=pairs.max{|a,b|a.value<=>b.value}
+        @cardb=pairs.min{|a,b|a.value<=>b.value}
+        @majorvalue=@carda.value()
+        @minorvalue=@cardb.value()
+        @precedence=3
+        @kickers=hand.select{|c|c.rank!=@carda.rank&&c.rank!=@cardb.rank}
+    end
+  end
+  def to_s()
+    "Two pairs #{@carda.rank} and #{@cardb.rank}"
+  end
+end
+
+
+
 
 
 class PokerHandEvaluator
   def evaluateHand(hand)
-    result=[HighCard.new(hand),Pair.new(hand)]
+    result=[HighCard.new(hand),Pair.new(hand),TwoPairs.new(hand)]
     return result.max{|a,b|a.precedence<=>b.precedence}
   end
 end
@@ -236,6 +262,22 @@ describe PokerHandEvaluator do
     hand.kickers.count.must_equal 3
     hand.kickers.max{|a,b|a.value<=>b.value}.must_equal Card.new(QUEEN,SPADES)
   end
+
+  it "identifies two pairs" do
+    hand = @sut.evaluateHand(@parser.parseHand("TC 6H 6D QS QS"))
+    hand.must_be_instance_of TwoPairs
+    hand.majorvalue.must_equal 12 
+    hand.minorvalue.must_equal 6
+    hand.precedence.must_equal 3
+  end
+
+  it "identifies the twopair's kicker" do
+    hand = @sut.evaluateHand(@parser.parseHand("TC 6H 6D QS QS"))
+    hand.must_be_instance_of TwoPairs
+    hand.kickers.count.must_equal 1
+    hand.kickers.first.must_equal Card.new(TEN,CLUBS)
+  end
+
 
 
 
