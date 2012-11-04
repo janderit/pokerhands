@@ -200,8 +200,8 @@ class Flush < PokerHand
         @minorvalue=0
     else
         @card=flush.max{|a,b|a.value<=>b.value}
-        @majorvalue=@card.value()
-        @minorvalue=@card.value()
+        @majorvalue=1
+        @minorvalue=1
         @precedence=6
     end
   end
@@ -240,6 +240,44 @@ class Straight < PokerHand
 
 end
 
+class StraightFlush<PokerHand
+  def initialize(hand)
+    flush=Flush.new(hand)
+    straight=Straight.new(hand)
+    kickers=nil
+    if flush.precedence>0 && straight.precedence>0
+        @precedence=9
+        @card=straight.card
+        @majorvalue=@card.value()
+        @minorvalue=@card.value()
+    else
+        @precedence=0
+    end
+  end
+  def to_s()
+    "Straight flush from #{@card}"
+  end
+end
+
+class RoyalFlush<PokerHand
+  def initialize(hand)
+    flush=Flush.new(hand)
+    straight=Straight.new(hand)
+    kickers=nil
+    if flush.precedence>0 && straight.precedence>0 && straight.card.rank==ACE
+        @precedence=10
+        @card=straight.card
+        @majorvalue=@card.value()
+        @minorvalue=@card.value()
+    else
+        @precedence=0
+    end
+  end
+  def to_s()
+    "Royal flush from #{@card}"
+  end
+end
+
 
 
 
@@ -250,7 +288,7 @@ end
 
 class PokerHandEvaluator
   def evaluateHand(hand)
-    result=[HighCard.new(hand),Pair.new(hand),TwoPairs.new(hand),Triplet.new(hand),Quadriga.new(hand),FullHouse.new(hand),Flush.new(hand),Straight.new(hand)]
+    result=[HighCard.new(hand),Pair.new(hand),TwoPairs.new(hand),Triplet.new(hand),Quadriga.new(hand),FullHouse.new(hand),Flush.new(hand),Straight.new(hand),StraightFlush.new(hand),RoyalFlush.new(hand)]
     return result.max{|a,b|a.precedence<=>b.precedence}
   end
 end
@@ -447,6 +485,10 @@ describe PokerHandComparer do
   sample("Black: 2H 3D 5S 5C KD  White: 2D 4H 5H 5D KH", WHITE)
 
   sample("Black: 2H 4S 4C 2D 4H  White: 3S 3C 3H 3D 6S", WHITE)
+  sample("Black: 9H QS TC JD KH  White: JS QC KS TD AS", WHITE)
   sample("Black: 9H QS TC JD KH  White: 2S 3C 3H 3D 6S", BLACK)
+
+  sample("Black: 9H QH TH JH KH  White: JS QC KS TD AS", BLACK)
+  sample("Black: 9S QS TC JD KS  White: JH QH KH TH AH", WHITE)
 
 end
