@@ -95,8 +95,17 @@ class PokerHandComparer
     @evaluator=evaluator
   end
 
-  def compare(black, white)
+  def compareEqual(black, white)
     TIE
+  end
+
+  def compare(black, white)
+    maxblack=black.max{|a,b|a.precedence<=>b.precedence}
+    maxwhite=white.max{|a,b|a.precedence<=>b.precedence}
+    return compareEqual(maxblack,maxwhite) if (maxblack.precedence==maxwhite.precedence)
+    return BLACK if (maxblack.precedence>maxwhite.precedence)
+    return WHITE if (maxblack.precedence<maxwhite.precedence)
+    raise("WTF")
   end
   
   def analyse(line)
@@ -195,9 +204,9 @@ describe PokerHandComparer do
     @sut = PokerHandComparer.new(PokerHandParser.new, PokerHandEvaluator.new)
   end
 
-#  sample("Black: 2H 3D 5S 9C KD  White: 2C 3H 4S 8C AH", WHITE)
-#  sample("Black: 2H 4S 4C 2D 4H  White: 2S 8S AS QS 3S", BLACK)
-#  sample("Black: 2H 3D 5S 9C KD  White: 2C 3H 4S 8C KH", BLACK)
-#  sample("Black: 2H 3D 5S 9C KD  White: 2D 3H 5C 9S KH", TIE)
+  sample("Black: 2H 3D 5S 9C KD  White: 2C 3H 4S 8C AH", WHITE)
+  sample("Black: 2H 4S 4C 2D 4H  White: 2S 8S AS QS 3S", BLACK)
+  sample("Black: 2H 3D 5S 9C KD  White: 2C 3H 4S 8C KH", BLACK)
+  sample("Black: 2H 3D 5S 9C KD  White: 2D 3H 5C 9S KH", TIE)
 
 end
