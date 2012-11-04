@@ -188,6 +188,30 @@ class FullHouse<PokerHand
   end
 end
 
+class Flush < PokerHand
+  def initialize(hand)
+    flush=hand.select{|x|hand.select{|y|y.suit==x.suit}.count==5}
+    flush=flush.uniq{|c|c.suit}
+
+    @kickers=nil
+    if flush.count==0
+        @precedence=0
+        @majorvalue=0
+        @minorvalue=0
+    else
+        @card=flush.max{|a,b|a.value<=>b.value}
+        @majorvalue=@card.value()
+        @minorvalue=@card.value()
+        @precedence=6
+    end
+  end
+  def to_s()
+    "Flush #{@card.suit}"
+  end
+end
+
+
+
 
 
 
@@ -198,7 +222,7 @@ end
 
 class PokerHandEvaluator
   def evaluateHand(hand)
-    result=[HighCard.new(hand),Pair.new(hand),TwoPairs.new(hand),Triplet.new(hand),Quadriga.new(hand),FullHouse.new(hand)]
+    result=[HighCard.new(hand),Pair.new(hand),TwoPairs.new(hand),Triplet.new(hand),Quadriga.new(hand),FullHouse.new(hand),Flush.new(hand)]
     return result.max{|a,b|a.precedence<=>b.precedence}
   end
 end
@@ -377,8 +401,9 @@ describe PokerHandComparer do
 
   sample("Black: 2H 3D 5S 9C KD  White: 2C 3H 4S 8C AH", WHITE)
   sample("Black: 2H 4S 4C 2D 4H  White: 2S 8S AS QS 3S", BLACK)
-  sample("Black: 2H 4S 4C 2D 4H  White: 2C 8S AS QS 3S", WHITE)
-  sample("Black: 2H 4S 4C 2D 4H  White: KD KH AS QS KS", BLACK)
+  sample("Black: 2H 4S 4C 2D 4H  White: 2C 8S AS QS 3S", BLACK)
+  sample("Black: 2H 6S 4C 2D 4H  White: 5S KS AS QS KS", WHITE)
+  sample("Black: 2H 2S 4C 2D 4H  White: KD KH AS QS KS", BLACK)
   sample("Black: 2H 3D 5S 9C KD  White: 2C 3H 4S 8C KH", BLACK)
   sample("Black: 2H 3D 5S 9C KD  White: 2D 3H 5C 9S KH", TIE)
 
