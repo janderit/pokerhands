@@ -56,19 +56,20 @@ class PokerHandParser
 end
 
 class PokerHand
-  attr_reader :precedence,:kickers
+  attr_reader :precedence,:kickers,:majorvalue,:minorvalue
 end
 
 class HighCard < PokerHand
   attr_reader :card,:value
   def initialize(hand)
     @card=hand.max{|a,b| a.value<=>b.value}
-    @value=@card.value()
+    @majorvalue=@card.value()
+    @minorvalue=@card.value()
     @precedence=1
     @kickers=hand-[@card]
   end
   def to_s()
-    "High card #{@card}"
+    "High card #{@card.rank}"
   end
 end
 
@@ -87,6 +88,7 @@ BLACK=1
 WHITE=2
 
 
+WinningHand=Struct.new(:winner, :info)
 
 class PokerHandComparer
 
@@ -95,16 +97,36 @@ class PokerHandComparer
     @evaluator=evaluator
   end
 
+  def doCompareKickers(black, white, blackkickers, whitekickers)
+    return WinningHand.new(TIE, "Both hands: #{black}, equal kickers") if (blackkickers.count==0)
+    maxblack=blackkickers.max{|a,b|a.value<=>b.value}
+    maxwhite=whitekickers.max{|a,b|a.value<=>b.value}
+    return WinningHand.new(BLACK,"#{black}, kicker: #{maxblack}") if (maxblack.value>maxwhite.value) 
+    return WinningHand.new(WHITE,"#{white}, kicker: #{maxwhite}") if (maxblack.value<maxwhite.value) 
+    doCompareKickers(black,white,blackkickers-[maxblack],whitekickers-[maxwhite])
+  end
+
+  def compareKickers(black, white)
+    return WinningHand.new(TIE, "Both hands: #{black}") if (black.kickers==nil)
+    raise "WTF" if (black.kickers.count!=white.kickers.count)
+    doCompareKickers(black, white, black.kickers, white.kickers)
+  end
+
   def compareEqual(black, white)
-    TIE
+    return WinningHand.new(BLACK,black) if (black.majorvalue>white.majorvalue) 
+    return WinningHand.new(WHITE,white) if (black.majorvalue<white.majorvalue) 
+    return WinningHand.new(BLACK,black) if (black.minorvalue>white.minorvalue) 
+    return WinningHand.new(WHITE,white) if (black.minorvalue<white.minorvalue) 
+    compareKickers(black, white)
   end
 
   def compare(black, white)
     maxblack=black.max{|a,b|a.precedence<=>b.precedence}
     maxwhite=white.max{|a,b|a.precedence<=>b.precedence}
+
     return compareEqual(maxblack,maxwhite) if (maxblack.precedence==maxwhite.precedence)
-    return BLACK if (maxblack.precedence>maxwhite.precedence)
-    return WHITE if (maxblack.precedence<maxwhite.precedence)
+    return WinningHand.new(BLACK,maxblack) if (maxblack.precedence>maxwhite.precedence)
+    return WinningHand.new(WHITE,maxwhite) if (maxblack.precedence<maxwhite.precedence)
     raise("WTF")
   end
   
@@ -172,7 +194,9 @@ describe PokerHandEvaluator do
     hand=hands.first
     hand.must_be_instance_of HighCard
     hand.card.must_equal Card.new(ACE,DIAMONDS)
-    hand.value.must_equal 14
+    hand.card.value.must_equal 14
+    hand.majorvalue.must_equal 14
+    hand.minorvalue.must_equal 14
     hand.precedence.must_equal 1
   end
 
@@ -195,7 +219,9 @@ end
 
 def sample(line, expectation)
   it "correctly analyses sample #{line}" do
-    @sut.analyse(line).must_equal expectation
+    result=@sut.analyse(line)
+    puts(result.info)
+    result.winner.must_equal expectation
   end
 end
 
