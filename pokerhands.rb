@@ -12,6 +12,9 @@ Card = Struct.new(:rank,:suit) do
       else rank.to_i
     end
   end 
+  def to_s()
+    "#{rank}#{suit}"
+  end
 end
 
 CLUBS="C"
@@ -52,8 +55,29 @@ class PokerHandParser
   end
 end
 
+class PokerHand
+  attr_reader :precedence,:kickers
+end
+
+class HighCard < PokerHand
+  attr_reader :card,:value
+  def initialize(hand)
+    @card=hand.max{|a,b| a.value<=>b.value}
+    @value=@card.value()
+    @precedence=1
+    @kickers=hand-[@card]
+  end
+  def to_s()
+    "High card #{@card}"
+  end
+end
+
 class PokerHandEvaluator
   def evaluateHand(hand)
+    result=[]
+    cand=HighCard.new(hand)
+    result+=[cand] if (cand.precedence>0)
+    return result
   end
 end
 
@@ -124,21 +148,35 @@ describe PokerHandParser do
     @sut.parseBlackWhiteLine("Black: 2H 3D 5S 9C KD  White: 2C 3H 4S 8C KH")[:white].must_equal [Card.new(TWO,CLUBS),Card.new(THREE,HEARTS),Card.new(FOUR,SPADES),Card.new(EIGHT,CLUBS),Card.new(KING,HEARTS)]
   end
 
-
-
-
-
-
-
-
-
 end
 
 
 describe PokerHandEvaluator do
   before do
+    @parser=PokerHandParser.new
     @sut = PokerHandEvaluator.new
   end
+
+  it "identifies the high card" do
+    hands = @sut.evaluateHand(@parser.parseHand("TC 6H AD QS 2S"))
+    hands.count.must_equal 1
+    hand=hands.first
+    hand.must_be_instance_of HighCard
+    hand.card.must_equal Card.new(ACE,DIAMONDS)
+    hand.value.must_equal 14
+    hand.precedence.must_equal 1
+  end
+
+  it "identifies the high card's kickers" do
+    hands = @sut.evaluateHand(@parser.parseHand("TC 6H AD QS 2S"))
+    hands.count.must_equal 1
+    hand=hands.first
+    hand.must_be_instance_of HighCard
+    hand.kickers.count.must_equal 4
+    @sut.evaluateHand(hand.kickers).first.card.must_equal Card.new(QUEEN,SPADES)
+  end
+
+
 
 end
 
